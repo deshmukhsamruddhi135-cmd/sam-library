@@ -1,0 +1,1731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sam-lib — Library Catalog &amp; Circulation</title>
+<script>(function(){try{var t=localStorage.getItem("op_theme");if(!t)t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..900&family=Source+Sans+3:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f3ecdb;
+    --surface:#fffdf6;
+    --surface-muted:#ece1c4;
+    --border:#ddcfa4;
+    --ink:#22291f;
+    --ink-soft:#5c5742;
+    --forest:#23433a;
+    --forest-dark:#16291f;
+    --forest-light:#3a5d50;
+    --brass:#b9883c;
+    --brass-dark:#8f6526;
+    --brass-light:#ecd9a8;
+    --stamp-green:#3a6b4d;
+    --stamp-red:#9c3b2e;
+    --cream:#f7f1e0;
+    --shadow:0 2px 10px rgba(34,28,10,0.08);
+    --shadow-lift:0 8px 24px rgba(34,28,10,0.16);
+    --radius:10px;
+    --accent-text:#23433a;
+    --pill-bg:rgba(35,67,58,0.06);
+    --sidebar-bg:#16291f;
+    color-scheme:light;
+  }
+  :root[data-theme="dark"]{
+    --bg:#111613;
+    --surface:#1a231e;
+    --surface-muted:#232e27;
+    --border:#34443a;
+    --ink:#ece5d0;
+    --ink-soft:#a8a48f;
+    --forest:#3f7562;
+    --forest-dark:#0c120f;
+    --forest-light:#4f8c76;
+    --brass:#c99a4b;
+    --brass-dark:#dcb064;
+    --brass-light:#ecd9a8;
+    --stamp-green:#6fbf8c;
+    --stamp-red:#e0705f;
+    --shadow:0 2px 10px rgba(0,0,0,0.35);
+    --shadow-lift:0 8px 24px rgba(0,0,0,0.55);
+    --accent-text:#8fc7b0;
+    --pill-bg:rgba(143,199,176,0.10);
+    --sidebar-bg:#0c120f;
+    color-scheme:dark;
+  }
+  body,.topbar,.sidebar,.stat-card,.ledger,.book-card,.member-card,.modal-card,.issue-panel{ transition:background-color 0.2s, color 0.2s, border-color 0.2s; }
+  .theme-toggle{
+    display:inline-flex; align-items:center; gap:7px; cursor:pointer;
+    background:var(--surface); color:var(--ink); border:1px solid var(--border);
+    border-radius:20px; padding:6px 12px; font-size:0.8rem; font-weight:600;
+  }
+  .theme-toggle:hover{ border-color:var(--brass); color:var(--brass-dark); }
+  .theme-toggle:focus-visible{ outline:none; box-shadow:0 0 0 3px rgba(184,136,60,0.4); }
+  .theme-toggle .icon-sun{ display:none; }
+  :root[data-theme="dark"] .theme-toggle .icon-sun{ display:block; }
+  :root[data-theme="dark"] .theme-toggle .icon-moon{ display:none; }
+  .topbar-right{ display:flex; align-items:center; gap:14px; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Source Sans 3', system-ui, sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    min-height:100vh;
+  }
+  h1,h2,h3,h4{ font-family:'Fraunces', serif; font-weight:600; margin:0; }
+  button{ font-family:inherit; }
+  input,select{ font-family:inherit; }
+
+  /* ---------- layout shell ---------- */
+  .shell{ display:flex; min-height:100vh; }
+
+  .sidebar{
+    width:240px; flex-shrink:0;
+    background:var(--sidebar-bg);
+    color:var(--cream);
+    display:flex; flex-direction:column;
+    padding:24px 18px;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; margin-bottom:32px; padding:0 6px; }
+  .brand-mark{ color:var(--brass-light); flex-shrink:0; }
+  .brand-text h1{ font-size:1.32rem; line-height:1.1; color:var(--cream); letter-spacing:0.01em; }
+  .brand-text p{ margin:2px 0 0; font-family:'IBM Plex Mono',monospace; font-size:0.68rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--brass-light); opacity:0.85; }
+
+  .nav{ display:flex; flex-direction:column; gap:4px; flex:1; }
+  .nav-item{
+    display:flex; align-items:center; gap:10px;
+    background:transparent; border:none; cursor:pointer;
+    color:var(--cream); opacity:0.78;
+    padding:10px 12px; border-radius:6px;
+    font-size:0.92rem; text-align:left;
+    border-left:3px solid transparent;
+    transition:background 0.15s, opacity 0.15s;
+  }
+  .nav-item svg{ flex-shrink:0; }
+  .nav-item:hover{ background:rgba(247,241,224,0.06); opacity:1; }
+  .nav-item.is-active{
+    background:rgba(247,241,224,0.08);
+    border-left:3px solid var(--brass-light);
+    opacity:1; font-weight:600;
+  }
+
+  .sidebar-foot{ margin-top:24px; padding-top:16px; border-top:1px solid rgba(247,241,224,0.14); }
+  .sidebar-foot .date-chip{ font-family:'IBM Plex Mono',monospace; font-size:0.72rem; color:var(--brass-light); opacity:0.85; margin-bottom:10px; }
+  .text-link{
+    background:none; border:none; color:var(--cream); opacity:0.65;
+    font-size:0.78rem; cursor:pointer; padding:0; text-decoration:underline;
+  }
+  .text-link:hover{ opacity:1; }
+
+  .main{ flex:1; min-width:0; display:flex; flex-direction:column; }
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:26px 36px 18px; border-bottom:1px solid var(--border);
+    background:var(--bg);
+  }
+  .topbar h2{ font-size:1.5rem; }
+  .topbar-meta{ font-family:'IBM Plex Mono',monospace; font-size:0.74rem; color:var(--ink-soft); }
+
+  .content{ padding:28px 36px 60px; flex:1; }
+  .panel{ display:none; }
+  .panel.is-active{ display:block; }
+
+  /* ---------- buttons ---------- */
+  .btn{
+    display:inline-flex; align-items:center; gap:7px;
+    padding:9px 16px; border-radius:7px; border:1px solid transparent;
+    font-size:0.88rem; font-weight:600; cursor:pointer;
+    transition:background 0.15s, border-color 0.15s, transform 0.05s;
+  }
+  .btn:active{ transform:translateY(1px); }
+  .btn-primary{ background:var(--forest); color:var(--cream); border-color:var(--forest-dark); }
+  .btn-primary:hover{ background:var(--forest-light); }
+  .btn-ghost{ background:transparent; color:var(--ink); border-color:var(--border); }
+  .btn-ghost:hover{ border-color:var(--brass); color:var(--brass-dark); }
+  .btn-icon{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:32px; height:32px; border-radius:6px; cursor:pointer;
+    background:transparent; border:1px solid var(--border); color:var(--ink-soft);
+  }
+  .btn-icon:hover{ border-color:var(--accent-text); color:var(--accent-text); }
+  .btn-icon.danger:hover{ border-color:var(--stamp-red); color:var(--stamp-red); }
+  .btn:focus-visible, .btn-icon:focus-visible, input:focus-visible, select:focus-visible, .nav-item:focus-visible{
+    outline:none; box-shadow:0 0 0 3px rgba(184,136,60,0.4); border-color:var(--brass);
+  }
+
+  /* ---------- toolbar / inputs ---------- */
+  .toolbar{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:22px; align-items:center; }
+  .search-field{ position:relative; flex:1; min-width:220px; max-width:320px; }
+  .search-field svg{ position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--ink-soft); }
+  .search-field input{ width:100%; padding:9px 12px 9px 34px; }
+  input[type="text"], input[type="email"], input[type="number"], input[type="password"], select{
+    border:1px solid var(--border); border-radius:7px; padding:9px 12px;
+    background:var(--surface); color:var(--ink); font-size:0.9rem;
+  }
+  .toolbar select{ min-width:140px; }
+
+  /* ---------- stat / dashboard ---------- */
+  .stats-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:16px; margin-bottom:30px; }
+  .stat-card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px 20px; box-shadow:var(--shadow); }
+  .stat-card .label{ font-family:'IBM Plex Mono',monospace; font-size:0.7rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-soft); }
+  .stat-card .value{ font-size:2.1rem; font-weight:700; margin-top:6px; color:var(--accent-text); }
+  .stat-card.warn .value{ color:var(--stamp-red); }
+
+  .ledger-title{ font-size:1.05rem; margin-bottom:12px; }
+  .ledger{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow); }
+  .ledger-row{ display:flex; align-items:center; gap:14px; padding:13px 18px; border-bottom:1px solid var(--border); font-size:0.88rem; }
+  .ledger-row:last-child{ border-bottom:none; }
+  .ledger-row:nth-child(even){ background:var(--surface-muted); }
+  .ledger-idx{ font-family:'IBM Plex Mono',monospace; color:var(--ink-soft); font-size:0.78rem; width:22px; }
+  .ledger-who{ font-weight:600; }
+  .ledger-action{ color:var(--ink-soft); }
+  .ledger-book{ font-style:italic; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ledger-date{ font-family:'IBM Plex Mono',monospace; font-size:0.78rem; color:var(--ink-soft); flex-shrink:0; }
+
+  /* ---------- card grid (books / members) ---------- */
+  .card-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:18px; }
+  .book-card, .member-card{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:18px; box-shadow:var(--shadow); position:relative; display:flex; flex-direction:column; gap:8px;
+  }
+  .call-tag{
+    position:absolute; top:14px; right:14px;
+    font-family:'IBM Plex Mono',monospace; font-size:0.66rem; letter-spacing:0.04em;
+    color:var(--ink-soft); border:1px solid var(--border); border-radius:4px; padding:2px 7px;
+    background:var(--surface-muted);
+  }
+  .book-card .title{ font-size:1.08rem; padding-right:70px; line-height:1.25; }
+  .book-card .author{ font-style:italic; color:var(--ink-soft); font-size:0.88rem; }
+  .meta-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:2px; }
+  .pill{
+    display:inline-flex; align-items:center; font-size:0.72rem; font-weight:600;
+    padding:3px 10px; border-radius:20px; border:1px solid var(--accent-text);
+    color:var(--accent-text); background:var(--pill-bg); white-space:nowrap;
+  }
+  .copies-text{ font-size:0.8rem; color:var(--ink-soft); }
+  .progress{ height:5px; border-radius:4px; background:var(--surface-muted); overflow:hidden; margin-top:2px; }
+  .progress-fill{ height:100%; background:var(--brass); }
+
+  .stamp{
+    display:inline-flex; align-items:center; justify-content:center; position:relative;
+    border:2px solid currentColor; border-radius:5px; padding:4px 11px;
+    font-family:'IBM Plex Mono',monospace; font-size:0.66rem; letter-spacing:0.1em;
+    text-transform:uppercase; transform:rotate(-3deg); width:fit-content;
+  }
+  .stamp::after{ content:''; position:absolute; inset:2px; border:1px solid currentColor; border-radius:3px; opacity:0.45; }
+  .stamp.available{ color:var(--stamp-green); }
+  .stamp.issued{ color:var(--brass-dark); }
+  .stamp.overdue{ color:var(--stamp-red); background:rgba(156,59,46,0.06); }
+
+  .card-actions{ display:flex; gap:8px; margin-top:auto; padding-top:8px; }
+
+  .member-card .avatar{
+    width:42px; height:42px; border-radius:50%; background:var(--brass-light); color:#16291f;
+    display:flex; align-items:center; justify-content:center; font-weight:700; font-family:'Fraunces',serif; flex-shrink:0;
+  }
+  .member-head{ display:flex; align-items:center; gap:12px; }
+  .member-head .name{ font-size:1.02rem; }
+  .member-id{ font-family:'IBM Plex Mono',monospace; font-size:0.7rem; color:var(--ink-soft); }
+  .member-detail{ font-size:0.85rem; color:var(--ink-soft); }
+
+  /* ---------- circulation ---------- */
+  .issue-panel{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px 22px; margin-bottom:26px; box-shadow:var(--shadow); }
+  .issue-panel h3{ margin-bottom:14px; font-size:1.05rem; }
+  .issue-row{ display:flex; gap:14px; flex-wrap:wrap; align-items:end; }
+  .field-inline{ display:flex; flex-direction:column; gap:5px; min-width:200px; flex:1; }
+  .field-inline label{ font-size:0.74rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-soft); font-family:'IBM Plex Mono',monospace; }
+
+  .circ-row{
+    display:flex; align-items:center; gap:16px; padding:14px 18px;
+    border-bottom:1px solid var(--border); border-left:3px solid transparent;
+  }
+  .circ-row:last-child{ border-bottom:none; }
+  .circ-row.is-overdue{ border-left-color:var(--stamp-red); background:rgba(156,59,46,0.04); }
+  .circ-main{ flex:1; min-width:0; }
+  .circ-main .b-title{ font-weight:600; }
+  .circ-main .m-name{ color:var(--ink-soft); }
+  .circ-due{ font-family:'IBM Plex Mono',monospace; font-size:0.8rem; text-align:right; }
+  .circ-due .rel{ display:block; font-size:0.7rem; margin-top:2px; }
+  .rel.ok{ color:var(--ink-soft); }
+  .rel.soon{ color:var(--brass-dark); }
+  .rel.late{ color:var(--stamp-red); font-weight:600; }
+
+  /* ---------- combined issue form ---------- */
+  .issue-grid{ display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:16px; }
+  .issue-col{ display:flex; flex-direction:column; gap:5px; min-width:0; }
+  .issue-col label.col-label{ font-size:0.74rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-soft); font-family:'IBM Plex Mono',monospace; }
+  .issue-col select, .issue-col input{ width:100%; }
+  .new-fields{ display:none; flex-direction:column; gap:8px; margin-top:6px; padding:12px; border:1px dashed var(--brass); border-radius:8px; background:var(--surface-muted); }
+  .new-fields.is-visible{ display:flex; }
+  .new-fields .nf-title{ font-family:'IBM Plex Mono',monospace; font-size:0.68rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--brass-dark); }
+  .new-fields input.has-error{ border-color:var(--stamp-red); }
+  .new-fields .row2{ display:grid; grid-template-columns:1fr 90px; gap:8px; }
+  .issue-actions{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .issue-hint{ font-size:0.8rem; color:var(--ink-soft); }
+  .avail-row{ display:flex; align-items:center; gap:16px; padding:14px 18px; border-bottom:1px solid var(--border); }
+  .avail-row:last-child{ border-bottom:none; }
+  .avail-row .a-main{ flex:1; min-width:0; }
+  .avail-row .a-title{ font-weight:600; }
+  .avail-row .a-author{ color:var(--ink-soft); font-style:italic; font-size:0.86rem; }
+  .avail-row .a-copies{ font-family:'IBM Plex Mono',monospace; font-size:0.78rem; color:var(--ink-soft); white-space:nowrap; }
+  @media (max-width:880px){ .issue-grid{ grid-template-columns:1fr; } }
+
+  .fine-line{ color:var(--stamp-red); font-weight:600; }
+  .due-select{ display:flex; align-items:center; gap:8px; }
+  .due-select label{ font-size:0.74rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-soft); font-family:'IBM Plex Mono',monospace; }
+  .data-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:18px; }
+  .data-card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px 22px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:10px; }
+  .data-card h3{ font-size:1.05rem; }
+  .data-card p{ margin:0; font-size:0.86rem; color:var(--ink-soft); line-height:1.45; }
+  .data-card .btn-row{ display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+  .circ-actions{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+
+  /* history modal */
+  .modal-card.wide{ max-width:680px; max-height:85vh; overflow:auto; }
+  .hist-summary{ font-size:0.85rem; color:var(--ink-soft); margin:-8px 0 14px; }
+  .hist-row{ display:flex; gap:12px; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); font-size:0.86rem; flex-wrap:wrap; }
+  .hist-row:last-child{ border-bottom:none; }
+  .hist-main{ flex:1; min-width:150px; }
+  .hist-main b{ font-weight:600; }
+  .hist-meta{ font-family:'IBM Plex Mono',monospace; font-size:0.74rem; color:var(--ink-soft); }
+  .hist-status{ font-family:'IBM Plex Mono',monospace; font-size:0.72rem; font-weight:600; padding:2px 8px; border-radius:4px; border:1px solid var(--border); white-space:nowrap; }
+  .hist-status.s-issued{ color:var(--brass-dark); }
+  .hist-status.s-returned{ color:var(--stamp-green); }
+  .hist-status.s-late, .hist-status.s-lost{ color:var(--stamp-red); }
+  /* quick search */
+  .q-group{ margin-top:14px; }
+  .q-group h4{ font-size:0.72rem; font-family:'IBM Plex Mono',monospace; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-soft); margin-bottom:6px; font-weight:500; }
+  .q-row{ display:flex; align-items:center; gap:12px; padding:9px 12px; border:1px solid var(--border); border-radius:8px; margin-bottom:6px; background:var(--bg); flex-wrap:wrap; }
+  .q-row .q-main{ flex:1; min-width:160px; font-size:0.88rem; }
+  .q-row .q-sub{ color:var(--ink-soft); font-size:0.8rem; }
+  .q-row .btn{ padding:6px 12px; font-size:0.8rem; }
+  .q-none{ margin-top:12px; font-size:0.86rem; color:var(--ink-soft); font-style:italic; }
+  /* lock screen */
+  .lock-overlay{ position:fixed; inset:0; z-index:200; background:var(--bg); display:flex; align-items:center; justify-content:center; padding:20px; }
+  .lock-overlay.is-hidden{ display:none; }
+  .lock-card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:30px 28px; width:100%; max-width:380px; box-shadow:var(--shadow-lift); text-align:center; }
+  .lock-card .lock-icon{ color:var(--brass); margin-bottom:10px; }
+  .lock-card h2{ font-size:1.35rem; margin-bottom:6px; }
+  .lock-card p{ margin:0 0 18px; font-size:0.88rem; color:var(--ink-soft); }
+  .lock-card input{ width:100%; margin-bottom:10px; }
+  .lock-card .btn{ width:100%; justify-content:center; margin-top:4px; }
+  .lock-error{ color:var(--stamp-red); font-size:0.8rem; min-height:1.1em; margin-bottom:6px; }
+
+  /* ---------- empty state ---------- */
+  .empty-state{ text-align:center; padding:50px 20px; color:var(--ink-soft); }
+  .empty-state svg{ color:var(--border); margin-bottom:12px; }
+  .empty-state p{ font-style:italic; font-size:0.95rem; }
+
+  /* ---------- modal ---------- */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(22,30,20,0.45);
+    display:none; align-items:center; justify-content:center; padding:20px; z-index:50;
+  }
+  .modal-overlay.is-open{ display:flex; }
+  .modal-card{
+    background:var(--surface); border-radius:12px; max-width:460px; width:100%;
+    padding:26px 28px; box-shadow:var(--shadow-lift);
+  }
+  .modal-card h3{ margin-bottom:18px; font-size:1.2rem; }
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-soft); font-family:'IBM Plex Mono',monospace; margin-bottom:5px; }
+  .field input, .field select{ width:100%; }
+  .field input.has-error{ border-color:var(--stamp-red); }
+  .field-error{ color:var(--stamp-red); font-size:0.76rem; margin-top:4px; display:none; }
+  .field-error.is-visible{ display:block; }
+  .modal-actions{ display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
+
+  /* ---------- toast ---------- */
+  .toast-container{ position:fixed; bottom:22px; right:22px; display:flex; flex-direction:column; gap:10px; z-index:60; }
+  .toast{
+    background:var(--forest-dark); color:var(--cream); padding:11px 18px; border-radius:8px;
+    font-size:0.85rem; box-shadow:var(--shadow-lift); border-left:3px solid var(--brass-light);
+    animation:toast-in 0.2s ease-out;
+  }
+  .toast.error{ border-left-color:var(--stamp-red); }
+  @keyframes toast-in{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:translateY(0); } }
+
+  /* ---------- loading ---------- */
+  .loading-overlay{
+    position:fixed; inset:0; background:var(--bg); display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:14px; z-index:100;
+  }
+  .loading-overlay.is-hidden{ display:none; }
+  .spinner{ width:30px; height:30px; border:3px solid var(--border); border-top-color:var(--accent-text); border-radius:50%; animation:spin 0.8s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .loading-overlay p{ font-family:'IBM Plex Mono',monospace; font-size:0.78rem; color:var(--ink-soft); }
+
+  /* ---------- responsive ---------- */
+  @media (max-width:880px){
+    .shell{ flex-direction:column; }
+    .sidebar{ width:100%; flex-direction:row; align-items:center; padding:14px 16px; gap:16px; }
+    .brand{ margin-bottom:0; }
+    .nav{ flex-direction:row; overflow-x:auto; flex:1; }
+    .nav-item{ white-space:nowrap; border-left:none; border-bottom:3px solid transparent; }
+    .nav-item.is-active{ border-left:none; border-bottom:3px solid var(--brass-light); }
+    .sidebar-foot{ display:none; }
+    .topbar, .content{ padding-left:20px; padding-right:20px; }
+    .topbar-meta{ display:none; }
+    .stats-grid{ grid-template-columns:repeat(2,1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <p>LOADING CATALOG…</p>
+</div>
+
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <svg class="brand-mark" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      <div class="brand-text">
+        <h1>Sam-lib</h1>
+        <p>Catalog &amp; Circulation</p>
+      </div>
+    </div>
+    <nav class="nav" id="navList">
+      <button class="nav-item is-active" data-tab="dashboard">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" data-tab="books">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        Catalog
+      </button>
+      <button class="nav-item" data-tab="available">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Available Books
+      </button>
+      <button class="nav-item" data-tab="members">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2"/><path d="M17 11a4 4 0 0 0 0-8"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>
+        Members
+      </button>
+      <button class="nav-item" data-tab="issue">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7H7a4 4 0 0 0-4 4v1"/><path d="M3 17h14a4 4 0 0 0 4-4v-1"/><polyline points="6 4 3 7 6 10"/><polyline points="18 14 21 17 18 20"/></svg>
+        Circulation
+      </button>
+      <button class="nav-item" data-tab="data">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Backup &amp; Export
+      </button>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="date-chip" id="sidebarDate"></div>
+      <button class="text-link" id="resetBtn" type="button">Reset sample data</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <h2 id="pageTitle">Dashboard</h2>
+      <div class="topbar-right">
+        <div class="topbar-meta" id="topbarMeta"></div>
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark and light mode">
+          <svg class="icon-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+          <svg class="icon-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+          <span id="themeLabel">Dark</span>
+        </button>
+        <button class="theme-toggle" id="lockBtn" type="button" style="display:none" title="App lock karo">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          Lock
+        </button>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <section class="panel is-active" id="panel-dashboard">
+        <div class="stats-grid" id="stats"></div>
+        <h3 class="ledger-title">Recent Circulation Activity</h3>
+        <div class="ledger" id="activity"></div>
+      </section>
+
+      <section class="panel" id="panel-books">
+        <div class="toolbar">
+          <div class="search-field">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="bookSearch" placeholder="Search by title or author…" />
+          </div>
+          <select id="bookCategoryFilter"><option value="all">All categories</option></select>
+          <button class="btn btn-primary" id="addBookBtn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Book
+          </button>
+        </div>
+        <div class="card-grid" id="booksGrid"></div>
+      </section>
+
+      <section class="panel" id="panel-available">
+        <div class="toolbar">
+          <div class="search-field">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="availSearch" placeholder="Search available books…" />
+          </div>
+          <select id="availCategoryFilter"><option value="all">All categories</option></select>
+        </div>
+        <div class="ledger" id="availList"></div>
+      </section>
+
+      <section class="panel" id="panel-members">
+        <div class="toolbar">
+          <div class="search-field">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="memberSearch" placeholder="Search by name or email…" />
+          </div>
+          <button class="btn btn-primary" id="addMemberBtn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Member
+          </button>
+        </div>
+        <div class="card-grid" id="membersGrid"></div>
+      </section>
+
+      <section class="panel" id="panel-issue">
+        <div class="issue-panel">
+          <h3>Quick Search — Issue / Return</h3>
+          <div class="search-field" style="max-width:none">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="quickSearch" placeholder="Book ya member ka naam likho — turant issue ya return…" autocomplete="off" />
+          </div>
+          <div id="quickResults"></div>
+        </div>
+        <div class="issue-panel" id="issueFormPanel">
+          <h3>Issue a Book</h3>
+          <div class="issue-grid">
+            <div class="issue-col">
+              <label class="col-label" for="issueBookSelect">Book</label>
+              <select id="issueBookSelect"></select>
+              <div class="new-fields" id="newBookFields">
+                <div class="nf-title">New book</div>
+                <input type="text" id="nbTitle" placeholder="Title *" />
+                <input type="text" id="nbAuthor" placeholder="Author *" />
+                <div class="row2">
+                  <input type="text" id="nbCategory" placeholder="Category *" />
+                  <input type="number" id="nbCopies" min="1" value="1" title="Copies" />
+                </div>
+                <input type="text" id="nbIsbn" placeholder="ISBN (optional)" />
+              </div>
+            </div>
+            <div class="issue-col">
+              <label class="col-label" for="issueMemberSelect">Member (kisko de rahe ho)</label>
+              <select id="issueMemberSelect"></select>
+              <div class="new-fields" id="newMemberFields">
+                <div class="nf-title">New member</div>
+                <input type="text" id="nmName" placeholder="Name *" />
+                <input type="email" id="nmEmail" placeholder="Email *" />
+                <input type="text" id="nmPhone" placeholder="Phone *" />
+              </div>
+            </div>
+          </div>
+          <div class="issue-actions">
+            <div class="due-select">
+              <label for="issueDays">Due in</label>
+              <select id="issueDays">
+                <option value="7">7 days</option>
+                <option value="14" selected>14 days</option>
+                <option value="21">21 days</option>
+                <option value="30">30 days</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" id="issueBtn">Issue Book</button>
+            <span class="issue-hint">Naya book ya member dropdown me "+ Add new" choose karke yahin add kar sakte ho.</span>
+          </div>
+        </div>
+        <h3 class="ledger-title">Currently Issued</h3>
+        <div class="ledger" id="issuedList"></div>
+      </section>
+
+      <section class="panel" id="panel-data">
+        <div class="data-grid">
+          <div class="data-card">
+            <h3>Backup</h3>
+            <p>Poora data (books, members, history, fines) ek file me save karo. Browser clear ho ya device badle, tab bhi file se wapas la sakte ho.</p>
+            <div class="btn-row">
+              <button class="btn btn-primary" id="backupBtn" type="button">Download Backup</button>
+            </div>
+          </div>
+          <div class="data-card">
+            <h3>Restore</h3>
+            <p>Pehle liya hua backup file (.json) chuno. Dhyan rahe, abhi ka saara data uss file se replace ho jayega.</p>
+            <div class="btn-row">
+              <button class="btn btn-ghost" id="restoreBtn" type="button">Choose Backup File</button>
+              <input type="file" id="restoreFile" accept=".json,application/json" style="display:none" />
+            </div>
+          </div>
+          <div class="data-card">
+            <h3>Export to Excel (CSV)</h3>
+            <p>Excel ya Google Sheets me khulne wali files. Transactions me issue/due/return date aur fine bhi aati hai.</p>
+            <div class="btn-row">
+              <button class="btn btn-ghost" data-export="books" type="button">Books</button>
+              <button class="btn btn-ghost" data-export="members" type="button">Members</button>
+              <button class="btn btn-ghost" data-export="transactions" type="button">Transactions</button>
+            </div>
+          </div>
+          <div class="data-card">
+            <h3>Password Lock</h3>
+            <p id="securityStatus">Password lagao taaki app kholte hi password maange.</p>
+            <div class="btn-row">
+              <button class="btn btn-primary" id="setPwBtn" type="button">Set Password</button>
+              <button class="btn btn-ghost" id="removePwBtn" type="button">Remove</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- Book modal -->
+<div class="modal-overlay" id="bookModal">
+  <div class="modal-card">
+    <h3 id="bookModalTitle">Add Book</h3>
+    <input type="hidden" id="bookId" />
+    <div class="field">
+      <label for="bookTitle">Title</label>
+      <input id="bookTitle" type="text" />
+      <div class="field-error" id="err-bookTitle">Title is required.</div>
+    </div>
+    <div class="field">
+      <label for="bookAuthor">Author</label>
+      <input id="bookAuthor" type="text" />
+      <div class="field-error" id="err-bookAuthor">Author is required.</div>
+    </div>
+    <div class="field">
+      <label for="bookIsbn">ISBN</label>
+      <input id="bookIsbn" type="text" placeholder="Optional" />
+    </div>
+    <div class="field">
+      <label for="bookCategory">Category</label>
+      <input id="bookCategory" type="text" placeholder="e.g. Fiction, History" />
+      <div class="field-error" id="err-bookCategory">Category is required.</div>
+    </div>
+    <div class="field">
+      <label for="bookCopies">Copies</label>
+      <input id="bookCopies" type="number" min="1" value="1" />
+    </div>
+    <div class="field">
+      <label for="bookPrice">Price ₹ (book kho jaye to charge)</label>
+      <input id="bookPrice" type="number" min="0" placeholder="Optional" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="cancelBookBtn" type="button">Cancel</button>
+      <button class="btn btn-primary" id="saveBookBtn" type="button">Save Book</button>
+    </div>
+  </div>
+</div>
+
+<!-- Member modal -->
+<div class="modal-overlay" id="memberModal">
+  <div class="modal-card">
+    <h3 id="memberModalTitle">Add Member</h3>
+    <input type="hidden" id="memberId" />
+    <div class="field">
+      <label for="memberName">Name</label>
+      <input id="memberName" type="text" />
+      <div class="field-error" id="err-memberName">Name is required.</div>
+    </div>
+    <div class="field">
+      <label for="memberEmail">Email</label>
+      <input id="memberEmail" type="email" />
+      <div class="field-error" id="err-memberEmail">Enter a valid email address.</div>
+    </div>
+    <div class="field">
+      <label for="memberPhone">Phone</label>
+      <input id="memberPhone" type="text" />
+      <div class="field-error" id="err-memberPhone">Phone number is required.</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="cancelMemberBtn" type="button">Cancel</button>
+      <button class="btn btn-primary" id="saveMemberBtn" type="button">Save Member</button>
+    </div>
+  </div>
+</div>
+
+<!-- History modal -->
+<div class="modal-overlay" id="historyModal">
+  <div class="modal-card wide">
+    <h3 id="historyTitle">History</h3>
+    <div class="hist-summary" id="historySummary"></div>
+    <div id="historyBody"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="closeHistoryBtn" type="button">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Password modal -->
+<div class="modal-overlay" id="pwModal">
+  <div class="modal-card">
+    <h3 id="pwModalTitle">Set Password</h3>
+    <div class="field" id="pwCurrentWrap">
+      <label for="pwCurrent">Current password</label>
+      <input id="pwCurrent" type="password" autocomplete="current-password" />
+    </div>
+    <div class="field" id="pwNewWrap">
+      <label for="pwNew">New password (min 4 characters)</label>
+      <input id="pwNew" type="password" autocomplete="new-password" />
+    </div>
+    <div class="field" id="pwNew2Wrap">
+      <label for="pwNew2">Confirm new password</label>
+      <input id="pwNew2" type="password" autocomplete="new-password" />
+    </div>
+    <div class="field-error" id="pwError"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="cancelPwBtn" type="button">Cancel</button>
+      <button class="btn btn-primary" id="savePwBtn" type="button">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Lock screen -->
+<div class="lock-overlay is-hidden" id="lockOverlay">
+  <div class="lock-card">
+    <svg class="lock-icon" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+    <h2 id="lockTitle">Sam-lib is locked</h2>
+    <p id="lockMsg">Password daalo.</p>
+    <input type="password" id="lockPass" placeholder="Password" autocomplete="current-password" />
+    <input type="password" id="lockPass2" placeholder="Confirm password" autocomplete="new-password" style="display:none" />
+    <div class="lock-error" id="lockError"></div>
+    <button class="btn btn-primary" id="lockSubmit" type="button">Unlock</button>
+    <button class="btn btn-ghost" id="lockSkip" type="button" style="display:none">Abhi nahi, skip karo</button>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer" role="status" aria-live="polite"></div>
+
+<script>
+// =====================================================================
+//  SAM-LIB — Library Catalog & Circulation
+//  Persists via the artifact storage API (window.storage), personal scope.
+// =====================================================================
+
+const STORAGE_KEY = 'pustakalaya_db_v1';
+
+// ---------- theme (light / dark) ----------
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme', t);
+  const l = document.getElementById('themeLabel');
+  if(l) l.textContent = t === 'dark' ? 'Light' : 'Dark';
+}
+function initTheme(){
+  applyTheme(document.documentElement.getAttribute('data-theme') || 'light');
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    try{ localStorage.setItem('op_theme', next); }catch(e){}
+  });
+}
+initTheme();
+let state = null;
+
+// ---------- seed data ----------
+function seedData(){
+  return {
+    books: [
+      { id:1, title:'The Alchemist', author:'Paulo Coelho', isbn:'978-0-06-250217-4', category:'Fiction', totalCopies:5, availableCopies:3 },
+      { id:2, title:'Sapiens', author:'Yuval Noah Harari', isbn:'978-0-06-231609-7', category:'History', totalCopies:4, availableCopies:2 },
+      { id:3, title:'The Great Gatsby', author:'F. Scott Fitzgerald', isbn:'978-0-7432-7356-5', category:'Fiction', totalCopies:3, availableCopies:1 },
+    ],
+    members: [
+      { id:1, name:'Aarav Patel', email:'aarav@email.com', phone:'9876543210', joined:'2024-01-15' },
+      { id:2, name:'Priya Sharma', email:'priya@email.com', phone:'8765432109', joined:'2024-02-20' },
+    ],
+    transactions: [
+      { id:1, bookId:1, memberId:1, issueDate:'2026-06-01', dueDate:'2026-06-15', returnDate:null, status:'issued' },
+      { id:2, bookId:3, memberId:2, issueDate:'2026-06-05', dueDate:'2026-06-19', returnDate:null, status:'issued' },
+    ],
+    nextId: { books:4, members:3, transactions:3 }
+  };
+}
+
+function nextId(collection){
+  if(!state.nextId) state.nextId = {};
+  if(!state.nextId[collection]) state.nextId[collection] = 1;
+  return state.nextId[collection]++;
+}
+
+// ---------- persistence ----------
+async function persist(){
+  try{
+    const res = await window.storage.set(STORAGE_KEY, JSON.stringify(state));
+    if(!res) toast('Changes may not have saved.', 'error');
+  }catch(err){
+    console.error('Storage write failed', err);
+    toast('Changes may not have saved.', 'error');
+  }
+}
+
+async function init(){
+  try{
+    const result = await window.storage.get(STORAGE_KEY);
+    state = result ? JSON.parse(result.value) : seedData();
+    if(!result) await persist();
+  }catch(err){
+    state = seedData();
+  }
+  document.getElementById('loadingOverlay').classList.add('is-hidden');
+  updateClock();
+  showTab('dashboard');
+  refreshLockUi();
+  if(state.auth) showLock('unlock');
+  else if(!state.authSkipped) showLock('setup');
+}
+
+async function resetData(){
+  if(!confirm('Reset all library data back to the sample dataset? This cannot be undone.')) return;
+  document.getElementById('loadingOverlay').classList.remove('is-hidden');
+  try{ await window.storage.delete(STORAGE_KEY); }catch(e){ /* key may not exist */ }
+  const keepAuth = { auth: state.auth, authSkipped: state.authSkipped };
+  state = seedData();
+  if(keepAuth.auth) state.auth = keepAuth.auth;
+  if(keepAuth.authSkipped) state.authSkipped = true;
+  try{ await persist(); }catch(e){}
+  document.getElementById('loadingOverlay').classList.add('is-hidden');
+  showTab('dashboard');
+  toast('Sample data restored.');
+}
+
+// ---------- helpers ----------
+const FINE_PER_DAY = 2; // ₹ per overdue day
+const MAX_BOOKS_PER_MEMBER = 3; // max books one member can hold at a time
+function money(n){ return '₹' + (n || 0).toLocaleString('en-IN'); }
+function fineFor(t){
+  if(t.status === 'issued'){ const late = -daysDiff(t.dueDate); return late > 0 ? late * FINE_PER_DAY : 0; }
+  return t.fine || 0;
+}
+function pendingFineFor(t){
+  if(t.status === 'issued') return fineFor(t);
+  return (t.fine && !t.finePaid) ? t.fine : 0;
+}
+function memberPendingFine(memberId){
+  return state.transactions.filter(t => t.memberId === memberId).reduce((s,t) => s + pendingFineFor(t), 0);
+}
+function memberActiveCount(memberId){
+  return state.transactions.filter(t => t.memberId === memberId && t.status === 'issued').length;
+}
+function isDefaulter(memberId){ return memberPendingFine(memberId) > 0; }
+function csvCell(v){
+  let t = v == null ? '' : String(v);
+  if(/^[=+\-@]/.test(t)) t = "'" + t;
+  return '"' + t.replace(/"/g, '""') + '"';
+}
+function downloadFile(name, content, type){
+  const blob = new Blob([content], { type });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+function formatDate(d){
+  if(!d) return '—';
+  return new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+}
+function today(){ return new Date().toISOString().slice(0,10); }
+function daysDiff(dateStr){
+  return Math.round((new Date(dateStr+'T00:00:00') - new Date(today()+'T00:00:00')) / 86400000);
+}
+function callCode(category){
+  const letters = (category || 'GEN').replace(/[^a-zA-Z]/g,'').toUpperCase();
+  return (letters.slice(0,3) || 'GEN').padEnd(3,'X');
+}
+function callNumber(book){ return `${callCode(book.category)}-${String(book.id).padStart(3,'0')}`; }
+function memberCode(m){ return `MEM-${String(m.id).padStart(4,'0')}`; }
+function initials(name){
+  return name.split(' ').filter(Boolean).slice(0,2).map(w => w[0].toUpperCase()).join('');
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function toast(message, type='info'){
+  const container = document.getElementById('toastContainer');
+  const el = document.createElement('div');
+  el.className = 'toast' + (type === 'error' ? ' error' : '');
+  el.textContent = message;
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 3200);
+}
+
+function updateClock(){
+  const d = new Date();
+  const str = d.toLocaleDateString('en-IN', { weekday:'long', day:'2-digit', month:'short', year:'numeric' });
+  document.getElementById('sidebarDate').textContent = str;
+  document.getElementById('topbarMeta').textContent = str;
+}
+
+// ---------- dashboard ----------
+function renderDashboard(){
+  const totalBooks = state.books.reduce((s,b) => s + b.totalCopies, 0);
+  const avail = state.books.reduce((s,b) => s + b.availableCopies, 0);
+  const members = state.members.length;
+  const overdue = state.transactions.filter(t => t.status === 'issued' && t.dueDate < today()).length;
+  const pendingFines = state.transactions.reduce((s,t) => s + pendingFineFor(t), 0);
+
+  document.getElementById('stats').innerHTML = `
+    <div class="stat-card"><div class="label">Total Volumes</div><div class="value">${totalBooks}</div></div>
+    <div class="stat-card"><div class="label">Available Now</div><div class="value">${avail}</div></div>
+    <div class="stat-card"><div class="label">Members Enrolled</div><div class="value">${members}</div></div>
+    <div class="stat-card ${overdue > 0 ? 'warn' : ''}"><div class="label">Overdue Returns</div><div class="value">${overdue}</div></div>
+    <div class="stat-card ${pendingFines > 0 ? 'warn' : ''}"><div class="label">Pending Fines</div><div class="value">${money(pendingFines)}</div></div>
+  `;
+
+  const recent = state.transactions.slice().sort((a,b) => new Date(b.issueDate) - new Date(a.issueDate)).slice(0,6);
+  const activity = document.getElementById('activity');
+  if(recent.length === 0){
+    activity.innerHTML = emptyState('No circulation activity yet.');
+    return;
+  }
+  activity.innerHTML = recent.map((t, i) => {
+    const book = state.books.find(b => b.id === t.bookId);
+    const member = state.members.find(m => m.id === t.memberId);
+    const action = t.status === 'returned' ? 'returned' : (t.status === 'lost' ? 'lost' : 'borrowed');
+    return `<div class="ledger-row">
+      <div class="ledger-idx">${String(i+1).padStart(2,'0')}</div>
+      <div class="ledger-who">${escapeHtml(member ? member.name : 'Unknown member')}</div>
+      <div class="ledger-action">${action}</div>
+      <div class="ledger-book">${escapeHtml(book ? book.title : 'Unknown title')}</div>
+      <div class="ledger-date">${formatDate(t.status !== 'issued' ? t.returnDate : t.issueDate)}</div>
+    </div>`;
+  }).join('');
+}
+
+function emptyState(message){
+  return `<div class="empty-state">
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    <p>${escapeHtml(message)}</p>
+  </div>`;
+}
+
+// ---------- books ----------
+function renderBooks(){
+  const q = document.getElementById('bookSearch').value.toLowerCase();
+  const cat = document.getElementById('bookCategoryFilter').value;
+  let list = state.books;
+  if(q) list = list.filter(b => b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q));
+  if(cat !== 'all') list = list.filter(b => b.category === cat);
+
+  const categories = [...new Set(state.books.map(b => b.category))];
+  const filter = document.getElementById('bookCategoryFilter');
+  const current = filter.value;
+  filter.innerHTML = '<option value="all">All categories</option>' + categories.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  filter.value = categories.includes(current) || current === 'all' ? current : 'all';
+
+  const grid = document.getElementById('booksGrid');
+  if(list.length === 0){
+    grid.innerHTML = `<div style="grid-column:1/-1;">${emptyState('No volumes match your search. Try another title, author, or category.')}</div>`;
+    return;
+  }
+
+  grid.innerHTML = list.map(b => {
+    const pct = b.totalCopies > 0 ? Math.round((b.availableCopies / b.totalCopies) * 100) : 0;
+    const stampClass = b.availableCopies > 0 ? 'available' : 'issued';
+    const stampText = b.availableCopies > 0 ? 'Available' : 'All Issued';
+    return `<div class="book-card">
+      <div class="call-tag">${callNumber(b)}</div>
+      <div class="title">${escapeHtml(b.title)}</div>
+      <div class="author">${escapeHtml(b.author)}</div>
+      <div class="meta-row"><span class="pill">${escapeHtml(b.category)}</span></div>
+      <div class="copies-text">${b.availableCopies} of ${b.totalCopies} copies available</div>
+      <div class="progress"><div class="progress-fill" style="width:${pct}%"></div></div>
+      <div class="stamp ${stampClass}">${stampText}</div>
+      <div class="card-actions">
+        <button class="btn btn-ghost" style="padding:5px 10px;font-size:0.78rem" onclick="showBookHistory(${b.id})">History</button>
+        <button class="btn-icon" title="Edit" onclick="editBook(${b.id})">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        </button>
+        <button class="btn-icon danger" title="Delete" onclick="deleteBook(${b.id})">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function clearBookErrors(){
+  ['bookTitle','bookAuthor','bookCategory'].forEach(id => {
+    document.getElementById(id).classList.remove('has-error');
+    document.getElementById('err-'+id).classList.remove('is-visible');
+  });
+}
+
+function openBookModal(book){
+  clearBookErrors();
+  document.getElementById('bookModalTitle').textContent = book ? 'Edit Book' : 'Add Book';
+  document.getElementById('bookId').value = book ? book.id : '';
+  document.getElementById('bookTitle').value = book ? book.title : '';
+  document.getElementById('bookAuthor').value = book ? book.author : '';
+  document.getElementById('bookIsbn').value = book ? book.isbn : '';
+  document.getElementById('bookCategory').value = book ? book.category : '';
+  document.getElementById('bookCopies').value = book ? book.totalCopies : 1;
+  document.getElementById('bookPrice').value = book && book.price ? book.price : '';
+  document.getElementById('bookModal').classList.add('is-open');
+  document.getElementById('bookTitle').focus();
+}
+
+function saveBook(){
+  const id = document.getElementById('bookId').value ? parseInt(document.getElementById('bookId').value) : null;
+  const title = document.getElementById('bookTitle').value.trim();
+  const author = document.getElementById('bookAuthor').value.trim();
+  const isbn = document.getElementById('bookIsbn').value.trim();
+  const category = document.getElementById('bookCategory').value.trim();
+  const copies = Math.max(1, parseInt(document.getElementById('bookCopies').value) || 1);
+  const price = Math.max(0, parseInt(document.getElementById('bookPrice').value) || 0);
+
+  clearBookErrors();
+  let valid = true;
+  if(!title){ markError('bookTitle'); valid = false; }
+  if(!author){ markError('bookAuthor'); valid = false; }
+  if(!category){ markError('bookCategory'); valid = false; }
+  if(!valid) return;
+
+  if(id){
+    const book = state.books.find(b => b.id === id);
+    if(book){
+      const diff = copies - book.totalCopies;
+      const newAvail = Math.max(0, Math.min(copies, book.availableCopies + diff));
+      Object.assign(book, { title, author, isbn, category, price, totalCopies:copies, availableCopies:newAvail });
+    }
+  }else{
+    state.books.push({ id: nextId('books'), title, author, isbn, category, price, totalCopies: copies, availableCopies: copies });
+  }
+  persist();
+  closeModal('bookModal');
+  renderBooks();
+  toast(id ? 'Book updated.' : 'Book added to catalog.');
+}
+
+function markError(id){
+  document.getElementById(id).classList.add('has-error');
+  document.getElementById('err-'+id).classList.add('is-visible');
+}
+
+function editBook(id){
+  const book = state.books.find(b => b.id === id);
+  if(book) openBookModal(book);
+}
+
+function deleteBook(id){
+  if(!confirm('Delete this book from the catalog?')) return;
+  const issued = state.transactions.some(t => t.bookId === id && t.status === 'issued');
+  if(issued){ toast('Cannot delete — this book is currently issued.', 'error'); return; }
+  state.books = state.books.filter(b => b.id !== id);
+  persist();
+  renderBooks();
+  toast('Book removed.');
+}
+
+// ---------- members ----------
+function renderMembers(){
+  const q = document.getElementById('memberSearch').value.toLowerCase();
+  let list = state.members;
+  if(q) list = list.filter(m => m.name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q));
+
+  const grid = document.getElementById('membersGrid');
+  if(list.length === 0){
+    grid.innerHTML = `<div style="grid-column:1/-1;">${emptyState('No members match your search.')}</div>`;
+    return;
+  }
+
+  grid.innerHTML = list.map(m => `
+    <div class="member-card">
+      <div class="member-head">
+        <div class="avatar">${escapeHtml(initials(m.name))}</div>
+        <div>
+          <div class="name">${escapeHtml(m.name)}</div>
+          <div class="member-id">${memberCode(m)}</div>
+        </div>
+      </div>
+      <div class="member-detail">${escapeHtml(m.email)}</div>
+      <div class="member-detail">${escapeHtml(m.phone)}</div>
+      <div class="member-detail">Member since ${formatDate(m.joined)}</div>
+      <div class="member-detail">Books issued: ${memberActiveCount(m.id)} / ${MAX_BOOKS_PER_MEMBER}</div>
+      ${memberPendingFine(m.id) > 0 ? `<div class="member-detail fine-line">Pending fine: ${money(memberPendingFine(m.id))}</div><div class="stamp overdue">Defaulter</div>` : ''}
+      <div class="card-actions">
+        ${state.transactions.some(t => t.memberId === m.id && t.status === 'returned' && t.fine && !t.finePaid) ? `<button class="btn btn-ghost" style="padding:5px 10px;font-size:0.78rem" onclick="collectFine(${m.id})">Collect fine</button>` : ''}
+        <button class="btn btn-ghost" style="padding:5px 10px;font-size:0.78rem" onclick="showMemberHistory(${m.id})">History</button>
+        <button class="btn-icon" title="Edit" onclick="editMember(${m.id})">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        </button>
+        <button class="btn-icon danger" title="Delete" onclick="deleteMember(${m.id})">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function clearMemberErrors(){
+  ['memberName','memberEmail','memberPhone'].forEach(id => {
+    document.getElementById(id).classList.remove('has-error');
+    document.getElementById('err-'+id).classList.remove('is-visible');
+  });
+}
+
+function openMemberModal(member){
+  clearMemberErrors();
+  document.getElementById('memberModalTitle').textContent = member ? 'Edit Member' : 'Add Member';
+  document.getElementById('memberId').value = member ? member.id : '';
+  document.getElementById('memberName').value = member ? member.name : '';
+  document.getElementById('memberEmail').value = member ? member.email : '';
+  document.getElementById('memberPhone').value = member ? member.phone : '';
+  document.getElementById('memberModal').classList.add('is-open');
+  document.getElementById('memberName').focus();
+}
+
+function isValidEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+
+function saveMember(){
+  const id = document.getElementById('memberId').value ? parseInt(document.getElementById('memberId').value) : null;
+  const name = document.getElementById('memberName').value.trim();
+  const email = document.getElementById('memberEmail').value.trim();
+  const phone = document.getElementById('memberPhone').value.trim();
+
+  clearMemberErrors();
+  let valid = true;
+  if(!name){ markError('memberName'); valid = false; }
+  if(!email || !isValidEmail(email)){ markError('memberEmail'); valid = false; }
+  if(!phone){ markError('memberPhone'); valid = false; }
+  if(!valid) return;
+
+  if(id){
+    const member = state.members.find(m => m.id === id);
+    if(member) Object.assign(member, { name, email, phone });
+  }else{
+    state.members.push({ id: nextId('members'), name, email, phone, joined: today() });
+  }
+  persist();
+  closeModal('memberModal');
+  renderMembers();
+  toast(id ? 'Member updated.' : 'Member enrolled.');
+}
+
+function editMember(id){
+  const member = state.members.find(m => m.id === id);
+  if(member) openMemberModal(member);
+}
+
+function deleteMember(id){
+  if(!confirm('Remove this member?')) return;
+  const issued = state.transactions.some(t => t.memberId === id && t.status === 'issued');
+  if(issued){ toast('Cannot remove — this member has books issued.', 'error'); return; }
+  if(memberPendingFine(id) > 0){ toast('Cannot remove — this member has a pending fine.', 'error'); return; }
+  state.members = state.members.filter(m => m.id !== id);
+  persist();
+  renderMembers();
+  toast('Member removed.');
+}
+
+// ---------- circulation ----------
+const NEW_OPT = '__new__';
+
+function refreshIssueSelects(keepBookId){
+  const books = state.books.filter(b => b.availableCopies > 0);
+  const bookSelect = document.getElementById('issueBookSelect');
+  const memberSelect = document.getElementById('issueMemberSelect');
+  const prevBook = keepBookId != null ? String(keepBookId) : bookSelect.value;
+  const prevMember = memberSelect.value;
+
+  bookSelect.innerHTML = books.map(b => `<option value="${b.id}">${escapeHtml(b.title)} — ${b.availableCopies} available</option>`).join('')
+    + `<option value="${NEW_OPT}">+ Add new book…</option>`;
+  memberSelect.innerHTML = state.members.map(m => {
+      const tag = isDefaulter(m.id) ? ' — ⚠ defaulter' : (memberActiveCount(m.id) >= MAX_BOOKS_PER_MEMBER ? ' — limit full' : ` — ${memberActiveCount(m.id)}/${MAX_BOOKS_PER_MEMBER} books`);
+      return `<option value="${m.id}">${escapeHtml(m.name)}${tag}</option>`;
+    }).join('')
+    + `<option value="${NEW_OPT}">+ Add new member…</option>`;
+
+  const has = (sel, v) => [...sel.options].some(o => o.value === v);
+  bookSelect.value = has(bookSelect, prevBook) ? prevBook : (books.length ? String(books[0].id) : NEW_OPT);
+  memberSelect.value = has(memberSelect, prevMember) ? prevMember : (state.members.length ? String(state.members[0].id) : NEW_OPT);
+  toggleNewFields();
+}
+
+function toggleNewFields(){
+  document.getElementById('newBookFields').classList.toggle('is-visible', document.getElementById('issueBookSelect').value === NEW_OPT);
+  document.getElementById('newMemberFields').classList.toggle('is-visible', document.getElementById('issueMemberSelect').value === NEW_OPT);
+}
+
+function resetNewFields(){
+  ['nbTitle','nbAuthor','nbCategory','nbIsbn','nmName','nmEmail','nmPhone'].forEach(id => {
+    const el = document.getElementById(id); el.value = ''; el.classList.remove('has-error');
+  });
+  document.getElementById('nbCopies').value = 1;
+}
+
+function issueBook(){
+  const bookVal = document.getElementById('issueBookSelect').value;
+  const memberVal = document.getElementById('issueMemberSelect').value;
+  const newBook = bookVal === NEW_OPT;
+  const newMember = memberVal === NEW_OPT;
+
+  ['nbTitle','nbAuthor','nbCategory','nmName','nmEmail','nmPhone'].forEach(id => document.getElementById(id).classList.remove('has-error'));
+  let valid = true;
+  const bad = id => { document.getElementById(id).classList.add('has-error'); valid = false; };
+
+  const nb = {
+    title: document.getElementById('nbTitle').value.trim(),
+    author: document.getElementById('nbAuthor').value.trim(),
+    category: document.getElementById('nbCategory').value.trim(),
+    isbn: document.getElementById('nbIsbn').value.trim(),
+    copies: Math.max(1, parseInt(document.getElementById('nbCopies').value) || 1)
+  };
+  const nm = {
+    name: document.getElementById('nmName').value.trim(),
+    email: document.getElementById('nmEmail').value.trim(),
+    phone: document.getElementById('nmPhone').value.trim()
+  };
+
+  if(newBook){
+    if(!nb.title) bad('nbTitle');
+    if(!nb.author) bad('nbAuthor');
+    if(!nb.category) bad('nbCategory');
+  }else if(!parseInt(bookVal)){ toast('Select a book.', 'error'); return; }
+  if(newMember){
+    if(!nm.name) bad('nmName');
+    if(!nm.email || !isValidEmail(nm.email)) bad('nmEmail');
+    if(!nm.phone) bad('nmPhone');
+  }else if(!parseInt(memberVal)){ toast('Select a member.', 'error'); return; }
+  if(!valid){ toast('Please fill the highlighted fields.', 'error'); return; }
+
+  let book, member;
+  if(!newBook){
+    book = state.books.find(b => b.id === parseInt(bookVal));
+    if(!book || book.availableCopies <= 0){ toast('No copies available for that title.', 'error'); return; }
+  }
+  if(!newMember){
+    member = state.members.find(m => m.id === parseInt(memberVal));
+    if(!member){ toast('Select a member.', 'error'); return; }
+    if(isDefaulter(member.id)){
+      toast(`${member.name} defaulter hai — pending fine ${money(memberPendingFine(member.id))}. Pehle fine clear karo.`, 'error'); return;
+    }
+    if(memberActiveCount(member.id) >= MAX_BOOKS_PER_MEMBER){
+      toast(`${member.name} ke paas already ${MAX_BOOKS_PER_MEMBER} books hain (limit full). Pehle koi return karo.`, 'error'); return;
+    }
+    if(book && state.transactions.some(t => t.bookId === book.id && t.memberId === member.id && t.status === 'issued')){
+      toast('This member already has that book issued.', 'error'); return;
+    }
+  }
+
+  // everything valid — now create anything new
+  if(newBook){
+    book = { id: nextId('books'), title:nb.title, author:nb.author, isbn:nb.isbn, category:nb.category, totalCopies:nb.copies, availableCopies:nb.copies };
+    state.books.push(book);
+  }
+  if(newMember){
+    member = { id: nextId('members'), name:nm.name, email:nm.email, phone:nm.phone, joined: today() };
+    state.members.push(member);
+  }
+
+  const issueDate = today();
+  const due = new Date();
+  due.setDate(due.getDate() + (parseInt(document.getElementById('issueDays').value) || 14));
+  const dueDate = due.toISOString().slice(0,10);
+
+  state.transactions.push({ id: nextId('transactions'), bookId:book.id, memberId:member.id, issueDate, dueDate, returnDate:null, status:'issued' });
+  book.availableCopies -= 1;
+  persist();
+  resetNewFields();
+  renderIssuedList();
+  refreshIssueSelects();
+  toast(`"${book.title}" issued to ${member.name}.`);
+}
+
+// ---------- available books ----------
+function renderAvailable(){
+  const q = document.getElementById('availSearch').value.toLowerCase();
+  const filter = document.getElementById('availCategoryFilter');
+  const current = filter.value;
+  const pool = state.books.filter(b => b.availableCopies > 0);
+  const categories = [...new Set(pool.map(b => b.category))];
+  filter.innerHTML = '<option value="all">All categories</option>' + categories.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  filter.value = categories.includes(current) ? current : 'all';
+
+  let list = pool;
+  if(q) list = list.filter(b => b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q));
+  if(filter.value !== 'all') list = list.filter(b => b.category === filter.value);
+
+  const box = document.getElementById('availList');
+  if(list.length === 0){ box.innerHTML = emptyState('No available books found.'); return; }
+  box.innerHTML = list.map(b => `<div class="avail-row">
+      <div class="a-main">
+        <div class="a-title">${escapeHtml(b.title)}</div>
+        <div class="a-author">${escapeHtml(b.author)} · ${escapeHtml(b.category)}</div>
+      </div>
+      <div class="a-copies">${b.availableCopies} of ${b.totalCopies} available</div>
+      <div class="stamp available">Available</div>
+      <button class="btn btn-primary" onclick="issueFromAvailable(${b.id})">Issue</button>
+    </div>`).join('');
+}
+
+function issueFromAvailable(id){
+  showTab('issue');
+  refreshIssueSelects(id);
+  document.getElementById('issueFormPanel').scrollIntoView({ behavior:'smooth', block:'center' });
+  document.getElementById('issueMemberSelect').focus();
+}
+
+function pickMember(id){
+  showTab('issue');
+  document.getElementById('issueMemberSelect').value = String(id);
+  toggleNewFields();
+  document.getElementById('issueFormPanel').scrollIntoView({ behavior:'smooth', block:'center' });
+  document.getElementById('issueBookSelect').focus();
+}
+
+// ---------- quick search (circulation) ----------
+function renderQuick(){
+  const box = document.getElementById('quickResults');
+  const q = document.getElementById('quickSearch').value.trim().toLowerCase();
+  if(!q){ box.innerHTML = ''; return; }
+  const bookOf = t => state.books.find(b => b.id === t.bookId);
+  const memberOf = t => state.members.find(m => m.id === t.memberId);
+
+  const issued = state.transactions.filter(t => {
+    if(t.status !== 'issued') return false;
+    const b = bookOf(t), m = memberOf(t);
+    return (b && (b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q))) || (m && m.name.toLowerCase().includes(q));
+  }).slice(0,6);
+  const avail = state.books.filter(b => b.availableCopies > 0 && (b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q))).slice(0,6);
+  const members = state.members.filter(m => m.name.toLowerCase().includes(q) || (m.phone || '').includes(q)).slice(0,6);
+
+  let html = '';
+  if(issued.length){
+    html += '<div class="q-group"><h4>Return — abhi issued</h4>' + issued.map(t => {
+      const b = bookOf(t), m = memberOf(t), diff = daysDiff(t.dueDate);
+      const due = diff < 0 ? `Overdue ${-diff} din · Fine ${money(fineFor(t))}` : (diff === 0 ? 'Due today' : `Due in ${diff} din`);
+      return `<div class="q-row"><div class="q-main"><b>${escapeHtml(b ? b.title : 'Unknown')}</b><div class="q-sub">${escapeHtml(m ? m.name : 'Unknown')} · ${due}</div></div><button class="btn btn-primary" onclick="returnBook(${t.id})">Return</button></div>`;
+    }).join('') + '</div>';
+  }
+  if(avail.length){
+    html += '<div class="q-group"><h4>Issue — available books</h4>' + avail.map(b =>
+      `<div class="q-row"><div class="q-main"><b>${escapeHtml(b.title)}</b><div class="q-sub">${escapeHtml(b.author)} · ${b.availableCopies} available</div></div><button class="btn btn-ghost" onclick="issueFromAvailable(${b.id})">Issue this book</button></div>`
+    ).join('') + '</div>';
+  }
+  if(members.length){
+    html += '<div class="q-group"><h4>Members</h4>' + members.map(m => {
+      const flag = isDefaulter(m.id) ? ' · ⚠ defaulter' : '';
+      return `<div class="q-row"><div class="q-main"><b>${escapeHtml(m.name)}</b><div class="q-sub">${memberActiveCount(m.id)}/${MAX_BOOKS_PER_MEMBER} books${flag}</div></div><button class="btn btn-ghost" onclick="pickMember(${m.id})">Issue to this member</button></div>`;
+    }).join('') + '</div>';
+  }
+  box.innerHTML = html || '<div class="q-none">Kuch nahi mila.</div>';
+}
+
+// ---------- lost / damaged ----------
+function markLost(txnId){
+  const txn = state.transactions.find(t => t.id === txnId);
+  if(!txn || txn.status !== 'issued') return;
+  const book = state.books.find(b => b.id === txn.bookId);
+  const member = state.members.find(m => m.id === txn.memberId);
+  const input = prompt(`"${book ? book.title : 'Book'}" lost — ${member ? member.name : 'member'} se book ka kitna charge lena hai (₹)?`, String(book && book.price ? book.price : 0));
+  if(input === null) return;
+  const charge = Math.max(0, Math.round(Number(input)) || 0);
+  const late = fineFor(txn);
+  const total = late + charge;
+  let paid = true;
+  if(total > 0) paid = confirm(`Total ${money(total)} (late fine ${money(late)} + book charge ${money(charge)}).\n\nOK = abhi collect ho gaya\nCancel = pending rakho`);
+  txn.status = 'lost';
+  txn.returnDate = today();
+  txn.charge = charge;
+  txn.fine = total;
+  txn.finePaid = total > 0 ? paid : true;
+  if(book) book.totalCopies = Math.max(0, book.totalCopies - 1);
+  persist();
+  renderIssuedList();
+  refreshIssueSelects();
+  toast(`Marked lost${total > 0 ? ` — ${money(total)} ${paid ? 'collected' : 'pending'}` : ''}.`);
+}
+
+function markDamaged(txnId){
+  const txn = state.transactions.find(t => t.id === txnId);
+  if(!txn || txn.status !== 'issued') return;
+  const book = state.books.find(b => b.id === txn.bookId);
+  const member = state.members.find(m => m.id === txn.memberId);
+  const input = prompt(`"${book ? book.title : 'Book'}" damaged — ${member ? member.name : 'member'} se damage charge kitna lena hai (₹)? Charge nahi lena to 0 likho.`, '0');
+  if(input === null) return;
+  const charge = Math.max(0, Math.round(Number(input)) || 0);
+  const usable = confirm('Book abhi bhi use ho sakti hai?\n\nOK = haan, shelf pe wapas rakho\nCancel = nahi, yeh copy catalog se hata do');
+  const late = fineFor(txn);
+  const total = late + charge;
+  let paid = true;
+  if(total > 0) paid = confirm(`Total ${money(total)} (late fine ${money(late)} + damage charge ${money(charge)}).\n\nOK = abhi collect ho gaya\nCancel = pending rakho`);
+  txn.status = 'returned';
+  txn.returnDate = today();
+  txn.damaged = true;
+  txn.charge = charge;
+  txn.fine = total;
+  txn.finePaid = total > 0 ? paid : true;
+  if(book){
+    if(usable) book.availableCopies += 1;
+    else book.totalCopies = Math.max(0, book.totalCopies - 1);
+  }
+  persist();
+  renderIssuedList();
+  refreshIssueSelects();
+  toast(`Returned as damaged${total > 0 ? ` — ${money(total)} ${paid ? 'collected' : 'pending'}` : ''}.`);
+}
+
+// ---------- history ----------
+function statusInfo(t){
+  if(t.status === 'lost') return { label:'Lost', cls:'s-lost' };
+  if(t.status === 'returned') return { label: t.damaged ? 'Returned (damaged)' : 'Returned', cls:'s-returned' };
+  return daysDiff(t.dueDate) < 0 ? { label:'Overdue', cls:'s-late' } : { label:'Issued', cls:'s-issued' };
+}
+function histRow(mainHtml, t){
+  const st = statusInfo(t);
+  const f = fineFor(t);
+  const fineTxt = f > 0 ? ` · Fine ${money(f)}${pendingFineFor(t) > 0 ? ' (pending)' : ' (paid)'}` : '';
+  return `<div class="hist-row">
+    <div class="hist-main">${mainHtml}<div class="hist-meta">Issued ${formatDate(t.issueDate)} · Due ${formatDate(t.dueDate)}${t.returnDate ? ' · ' + (t.status === 'lost' ? 'Lost' : 'Returned') + ' ' + formatDate(t.returnDate) : ''}${fineTxt}</div></div>
+    <span class="hist-status ${st.cls}">${st.label}</span>
+  </div>`;
+}
+function openHistory(title, summary, rowsHtml){
+  document.getElementById('historyTitle').textContent = title;
+  document.getElementById('historySummary').textContent = summary;
+  document.getElementById('historyBody').innerHTML = rowsHtml || emptyState('Abhi koi history nahi hai.');
+  document.getElementById('historyModal').classList.add('is-open');
+}
+function showMemberHistory(id){
+  const m = state.members.find(x => x.id === id); if(!m) return;
+  const list = state.transactions.filter(t => t.memberId === id).sort((a,b) => b.id - a.id);
+  const rows = list.map(t => { const b = state.books.find(x => x.id === t.bookId); return histRow(`<b>${escapeHtml(b ? b.title : 'Unknown title')}</b>`, t); }).join('');
+  openHistory(`${m.name} — History`, `${list.length} baar li · abhi ${memberActiveCount(id)} books paas me · pending fine ${money(memberPendingFine(id))}`, rows);
+}
+function showBookHistory(id){
+  const b = state.books.find(x => x.id === id); if(!b) return;
+  const list = state.transactions.filter(t => t.bookId === id).sort((a,b2) => b2.id - a.id);
+  const rows = list.map(t => { const m = state.members.find(x => x.id === t.memberId); return histRow(`<b>${escapeHtml(m ? m.name : 'Unknown member')}</b>`, t); }).join('');
+  openHistory(`${b.title} — History`, `${list.length} baar issue hui · ${b.availableCopies} of ${b.totalCopies} copies available`, rows);
+}
+
+// ---------- password lock ----------
+function sha256(msg){
+  const rotr = (x,n) => (x >>> n) | (x << (32 - n));
+  const bytes = Array.from(new TextEncoder().encode(msg));
+  const K = [], H = [];
+  const isPrime = n => { for(let i = 2; i * i <= n; i++) if(n % i === 0) return false; return true; };
+  const frac = x => Math.floor((x - Math.floor(x)) * 4294967296);
+  for(let n = 2, c = 0; c < 64; n++){
+    if(isPrime(n)){ if(c < 8) H[c] = frac(Math.sqrt(n)) | 0; K[c] = frac(Math.cbrt(n)) | 0; c++; }
+  }
+  const bits = bytes.length * 8;
+  bytes.push(0x80);
+  while(bytes.length % 64 !== 56) bytes.push(0);
+  const hi = Math.floor(bits / 4294967296), lo = bits >>> 0;
+  [hi, lo].forEach(v => { bytes.push((v >>> 24) & 255, (v >>> 16) & 255, (v >>> 8) & 255, v & 255); });
+  const w = new Array(64);
+  for(let off = 0; off < bytes.length; off += 64){
+    for(let i = 0; i < 16; i++) w[i] = (bytes[off+i*4] << 24) | (bytes[off+i*4+1] << 16) | (bytes[off+i*4+2] << 8) | bytes[off+i*4+3];
+    for(let i = 16; i < 64; i++){
+      const s0 = rotr(w[i-15],7) ^ rotr(w[i-15],18) ^ (w[i-15] >>> 3);
+      const s1 = rotr(w[i-2],17) ^ rotr(w[i-2],19) ^ (w[i-2] >>> 10);
+      w[i] = (w[i-16] + s0 + w[i-7] + s1) | 0;
+    }
+    let [a,b,c,d,e,f,g,h] = H;
+    for(let i = 0; i < 64; i++){
+      const S1 = rotr(e,6) ^ rotr(e,11) ^ rotr(e,25);
+      const ch = (e & f) ^ (~e & g);
+      const t1 = (h + S1 + ch + K[i] + w[i]) | 0;
+      const S0 = rotr(a,2) ^ rotr(a,13) ^ rotr(a,22);
+      const maj = (a & b) ^ (a & c) ^ (b & c);
+      const t2 = (S0 + maj) | 0;
+      h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+    }
+    H[0] = (H[0]+a)|0; H[1] = (H[1]+b)|0; H[2] = (H[2]+c)|0; H[3] = (H[3]+d)|0;
+    H[4] = (H[4]+e)|0; H[5] = (H[5]+f)|0; H[6] = (H[6]+g)|0; H[7] = (H[7]+h)|0;
+  }
+  return H.map(x => (x >>> 0).toString(16).padStart(8,'0')).join('');
+}
+function hashPassword(pw, salt){
+  let h = sha256(salt + ':' + pw);
+  for(let i = 0; i < 1000; i++) h = sha256(h + salt + pw);
+  return h;
+}
+function randomSalt(){
+  try{ const a = new Uint8Array(12); crypto.getRandomValues(a); return Array.from(a).map(x => x.toString(16).padStart(2,'0')).join(''); }
+  catch(e){ return String(Math.random()).slice(2) + String(Date.now()); }
+}
+function verifyPassword(pw){ return !!(state.auth && hashPassword(pw, state.auth.salt) === state.auth.hash); }
+function setPassword(pw){ const salt = randomSalt(); state.auth = { salt, hash: hashPassword(pw, salt) }; state.authSkipped = false; }
+
+let lockMode = 'unlock';
+function showLock(mode){
+  lockMode = mode;
+  const setup = mode === 'setup';
+  document.getElementById('lockTitle').textContent = setup ? 'Set a password' : 'Sam-lib is locked';
+  document.getElementById('lockMsg').textContent = setup ? 'Taaki sirf library wala hi app chala sake. Baad me bhi set kar sakte ho.' : 'Password daalo.';
+  document.getElementById('lockPass').placeholder = setup ? 'New password (min 4 characters)' : 'Password';
+  document.getElementById('lockPass2').style.display = setup ? '' : 'none';
+  document.getElementById('lockSkip').style.display = setup ? '' : 'none';
+  document.getElementById('lockSubmit').textContent = setup ? 'Set Password' : 'Unlock';
+  document.getElementById('lockPass').value = '';
+  document.getElementById('lockPass2').value = '';
+  document.getElementById('lockError').textContent = '';
+  document.getElementById('lockOverlay').classList.remove('is-hidden');
+  setTimeout(() => document.getElementById('lockPass').focus(), 30);
+}
+function hideLock(){ document.getElementById('lockOverlay').classList.add('is-hidden'); }
+function lockSubmit(){
+  const pw = document.getElementById('lockPass').value;
+  const err = document.getElementById('lockError');
+  if(lockMode === 'unlock'){
+    if(verifyPassword(pw)){ hideLock(); document.getElementById('lockPass').value = ''; }
+    else { err.textContent = 'Galat password.'; document.getElementById('lockPass').select(); }
+    return;
+  }
+  if(pw.length < 4){ err.textContent = 'Kam se kam 4 characters.'; return; }
+  if(pw !== document.getElementById('lockPass2').value){ err.textContent = 'Dono password match nahi hue.'; return; }
+  setPassword(pw);
+  persist(); refreshLockUi(); hideLock(); toast('Password set ho gaya.');
+}
+function lockSkip(){ state.authSkipped = true; persist(); hideLock(); }
+function lockNow(){ if(state.auth) showLock('unlock'); }
+
+function refreshLockUi(){
+  document.getElementById('lockBtn').style.display = state.auth ? '' : 'none';
+  document.getElementById('securityStatus').textContent = state.auth ? 'Password lagaa hua hai. App kholte hi password poochega.' : 'Password lagao taaki app kholte hi password maange.';
+  document.getElementById('setPwBtn').textContent = state.auth ? 'Change Password' : 'Set Password';
+  document.getElementById('removePwBtn').style.display = state.auth ? '' : 'none';
+}
+
+let pwMode = 'set';
+function openPwModal(mode){
+  pwMode = mode;
+  ['pwCurrent','pwNew','pwNew2'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('pwError').classList.remove('is-visible');
+  document.getElementById('pwModalTitle').textContent = mode === 'remove' ? 'Remove Password' : (state.auth ? 'Change Password' : 'Set Password');
+  document.getElementById('pwCurrentWrap').style.display = state.auth ? '' : 'none';
+  document.getElementById('pwNewWrap').style.display = mode === 'remove' ? 'none' : '';
+  document.getElementById('pwNew2Wrap').style.display = mode === 'remove' ? 'none' : '';
+  document.getElementById('pwModal').classList.add('is-open');
+  document.getElementById(state.auth ? 'pwCurrent' : 'pwNew').focus();
+}
+function savePw(){
+  const err = document.getElementById('pwError');
+  const fail = msg => { err.textContent = msg; err.classList.add('is-visible'); };
+  if(state.auth && !verifyPassword(document.getElementById('pwCurrent').value)) return fail('Current password galat hai.');
+  if(pwMode === 'remove'){
+    delete state.auth; state.authSkipped = true;
+    persist(); refreshLockUi(); closeModal('pwModal'); toast('Password hata diya.'); return;
+  }
+  const n1 = document.getElementById('pwNew').value;
+  if(n1.length < 4) return fail('Kam se kam 4 characters.');
+  if(n1 !== document.getElementById('pwNew2').value) return fail('Dono password match nahi hue.');
+  setPassword(n1);
+  persist(); refreshLockUi(); closeModal('pwModal'); toast('Password save ho gaya.');
+}
+
+function renderIssuedList(){ renderIssuedListCore(); renderQuick(); }
+function renderIssuedListCore(){
+  const issued = state.transactions.filter(t => t.status === 'issued');
+  const container = document.getElementById('issuedList');
+  if(issued.length === 0){
+    container.innerHTML = emptyState('No books are currently issued.');
+    return;
+  }
+  container.innerHTML = issued.map(t => {
+    const book = state.books.find(b => b.id === t.bookId);
+    const member = state.members.find(m => m.id === t.memberId);
+    const diff = daysDiff(t.dueDate);
+    const overdue = diff < 0;
+    let relClass = 'ok', relText = `Due in ${diff} days`;
+    if(diff === 0){ relClass = 'soon'; relText = 'Due today'; }
+    else if(overdue){ relClass = 'late'; relText = `Overdue ${Math.abs(diff)} days · Fine ${money(fineFor(t))}`; }
+    return `<div class="circ-row ${overdue ? 'is-overdue' : ''}">
+      <div class="circ-main">
+        <div class="b-title">${escapeHtml(book ? book.title : 'Unknown title')}</div>
+        <div class="m-name">${escapeHtml(member ? member.name : 'Unknown member')}</div>
+      </div>
+      <div class="stamp ${overdue ? 'overdue' : 'issued'}">${overdue ? 'Overdue' : 'Issued'}</div>
+      <div class="circ-due">
+        ${formatDate(t.dueDate)}
+        <span class="rel ${relClass}">${relText}</span>
+      </div>
+      <div class="circ-actions">
+        ${overdue ? '' : `<button class="btn btn-ghost" title="Due date 7 din aage badhao" onclick="renewBook(${t.id})">Renew +7d</button>`}
+        <button class="btn btn-ghost" onclick="returnBook(${t.id})">Return</button>
+        <button class="btn btn-ghost" title="Book kharab ho gayi" onclick="markDamaged(${t.id})">Damaged</button>
+        <button class="btn btn-ghost" title="Book kho gayi" onclick="markLost(${t.id})">Lost</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function returnBook(txnId){
+  const txn = state.transactions.find(t => t.id === txnId);
+  if(!txn || txn.status === 'returned') return;
+  const book = state.books.find(b => b.id === txn.bookId);
+  const fine = fineFor(txn);
+  let paid = true;
+  if(fine > 0){
+    const member = state.members.find(m => m.id === txn.memberId);
+    paid = confirm(`Late return — fine ${money(fine)} (${member ? member.name : 'member'}).\n\nOK = fine abhi collect ho gaya\nCancel = fine pending rakho`);
+  }
+  if(book) book.availableCopies += 1;
+  txn.status = 'returned';
+  txn.returnDate = today();
+  txn.fine = fine;
+  txn.finePaid = fine > 0 ? paid : true;
+  persist();
+  renderIssuedList();
+  refreshIssueSelects();
+  toast(fine > 0 ? (paid ? `Book returned. Fine ${money(fine)} collected.` : `Book returned. Fine ${money(fine)} pending.`) : 'Book returned.');
+}
+
+function renewBook(txnId){
+  const txn = state.transactions.find(t => t.id === txnId);
+  if(!txn || txn.status !== 'issued') return;
+  if(daysDiff(txn.dueDate) < 0){ toast('Overdue book renew nahi ho sakti — pehle return karo.', 'error'); return; }
+  const d = new Date(txn.dueDate + 'T00:00:00');
+  d.setDate(d.getDate() + 7);
+  txn.dueDate = d.toISOString().slice(0,10);
+  txn.renewals = (txn.renewals || 0) + 1;
+  persist();
+  renderIssuedList();
+  toast('Renewed — new due date ' + formatDate(txn.dueDate) + '.');
+}
+
+function collectFine(memberId){
+  const list = state.transactions.filter(t => t.memberId === memberId && t.status === 'returned' && t.fine && !t.finePaid);
+  const total = list.reduce((s,t) => s + t.fine, 0);
+  if(!total || !confirm(`Collect ${money(total)} fine from this member?`)) return;
+  list.forEach(t => { t.finePaid = true; });
+  persist();
+  renderMembers();
+  toast(`${money(total)} fine collected.`);
+}
+
+// ---------- backup / export ----------
+function backupData(){
+  downloadFile(`sam-lib-backup-${today()}.json`, JSON.stringify((({ auth, authSkipped, ...rest }) => rest)(state), null, 2), 'application/json');
+  toast('Backup downloaded.');
+}
+
+function restoreData(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const data = JSON.parse(reader.result);
+      if(!data || !Array.isArray(data.books) || !Array.isArray(data.members) || !Array.isArray(data.transactions)) throw new Error('bad shape');
+      if(!confirm(`Restore backup? Abhi ka data replace ho jayega.\n\nBooks: ${data.books.length}, Members: ${data.members.length}, Transactions: ${data.transactions.length}`)) return;
+      const keepAuth = { auth: state.auth, authSkipped: state.authSkipped };
+      state = data;
+      delete state.auth; delete state.authSkipped;
+      if(keepAuth.auth) state.auth = keepAuth.auth;
+      if(keepAuth.authSkipped) state.authSkipped = true;
+      if(!state.nextId) state.nextId = {
+        books: Math.max(0, ...state.books.map(b => b.id)) + 1,
+        members: Math.max(0, ...state.members.map(m => m.id)) + 1,
+        transactions: Math.max(0, ...state.transactions.map(t => t.id)) + 1
+      };
+      persist();
+      showTab('dashboard');
+      toast('Backup restored.');
+    }catch(err){
+      toast('Yeh valid backup file nahi hai.', 'error');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function exportCsv(kind){
+  let rows;
+  if(kind === 'books'){
+    rows = [['Call No','Title','Author','ISBN','Category','Total Copies','Available Copies']]
+      .concat(state.books.map(b => [callNumber(b), b.title, b.author, b.isbn, b.category, b.totalCopies, b.availableCopies]));
+  }else if(kind === 'members'){
+    rows = [['Member ID','Name','Email','Phone','Joined','Pending Fine (INR)']]
+      .concat(state.members.map(m => [memberCode(m), m.name, m.email, m.phone, m.joined, memberPendingFine(m.id)]));
+  }else{
+    rows = [['Book','Member','Issue Date','Due Date','Return Date','Status','Fine (INR)','Fine Paid']]
+      .concat(state.transactions.map(t => {
+        const b = state.books.find(x => x.id === t.bookId), m = state.members.find(x => x.id === t.memberId);
+        const f = fineFor(t);
+        return [b ? b.title : '', m ? m.name : '', t.issueDate, t.dueDate, t.returnDate || '', t.status, f, f > 0 ? (pendingFineFor(t) > 0 ? 'No' : 'Yes') : ''];
+      }));
+  }
+  const csv = '\ufeff' + rows.map(r => r.map(csvCell).join(',')).join('\r\n');
+  downloadFile(`sam-lib-${kind}-${today()}.csv`, csv, 'text/csv;charset=utf-8');
+  toast('Export downloaded.');
+}
+
+// ---------- tabs & modals ----------
+const titles = { dashboard:'Dashboard', books:'Catalog', available:'Available Books', members:'Members', issue:'Circulation Desk', data:'Backup & Export' };
+
+function showTab(tab){
+  document.querySelectorAll('.panel').forEach(el => el.classList.remove('is-active'));
+  document.getElementById('panel-' + tab).classList.add('is-active');
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('is-active', el.dataset.tab === tab));
+  document.getElementById('pageTitle').textContent = titles[tab];
+
+  if(tab === 'dashboard') renderDashboard();
+  if(tab === 'books') renderBooks();
+  if(tab === 'available') renderAvailable();
+  if(tab === 'members') renderMembers();
+  if(tab === 'issue'){ refreshIssueSelects(); renderIssuedList(); }
+}
+
+function closeModal(id){
+  document.getElementById(id).classList.remove('is-open');
+}
+
+// ---------- wiring ----------
+document.getElementById('navList').addEventListener('click', e => {
+  const btn = e.target.closest('.nav-item');
+  if(btn) showTab(btn.dataset.tab);
+});
+
+document.getElementById('bookSearch').addEventListener('input', renderBooks);
+document.getElementById('bookCategoryFilter').addEventListener('change', renderBooks);
+document.getElementById('memberSearch').addEventListener('input', renderMembers);
+
+document.getElementById('addBookBtn').addEventListener('click', () => openBookModal());
+document.getElementById('addMemberBtn').addEventListener('click', () => openMemberModal());
+document.getElementById('saveBookBtn').addEventListener('click', saveBook);
+document.getElementById('saveMemberBtn').addEventListener('click', saveMember);
+document.getElementById('cancelBookBtn').addEventListener('click', () => closeModal('bookModal'));
+document.getElementById('cancelMemberBtn').addEventListener('click', () => closeModal('memberModal'));
+document.getElementById('issueBtn').addEventListener('click', issueBook);
+document.getElementById('backupBtn').addEventListener('click', backupData);
+document.getElementById('quickSearch').addEventListener('input', renderQuick);
+document.getElementById('closeHistoryBtn').addEventListener('click', () => closeModal('historyModal'));
+document.getElementById('lockBtn').addEventListener('click', lockNow);
+document.getElementById('lockSubmit').addEventListener('click', lockSubmit);
+document.getElementById('lockSkip').addEventListener('click', lockSkip);
+['lockPass','lockPass2'].forEach(id => document.getElementById(id).addEventListener('keydown', e => { if(e.key === 'Enter') lockSubmit(); }));
+document.getElementById('setPwBtn').addEventListener('click', () => openPwModal('set'));
+document.getElementById('removePwBtn').addEventListener('click', () => openPwModal('remove'));
+document.getElementById('savePwBtn').addEventListener('click', savePw);
+document.getElementById('cancelPwBtn').addEventListener('click', () => closeModal('pwModal'));
+['pwCurrent','pwNew','pwNew2'].forEach(id => document.getElementById(id).addEventListener('keydown', e => { if(e.key === 'Enter') savePw(); }));
+document.getElementById('restoreBtn').addEventListener('click', () => document.getElementById('restoreFile').click());
+document.getElementById('restoreFile').addEventListener('change', e => { restoreData(e.target.files[0]); e.target.value = ''; });
+document.querySelectorAll('[data-export]').forEach(b => b.addEventListener('click', () => exportCsv(b.dataset.export)));
+document.getElementById('issueBookSelect').addEventListener('change', toggleNewFields);
+document.getElementById('issueMemberSelect').addEventListener('change', toggleNewFields);
+document.getElementById('availSearch').addEventListener('input', renderAvailable);
+document.getElementById('availCategoryFilter').addEventListener('change', renderAvailable);
+document.getElementById('resetBtn').addEventListener('click', resetData);
+
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if(e.target === m) m.classList.remove('is-open'); });
+});
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape'){
+    document.querySelectorAll('.modal-overlay.is-open').forEach(m => m.classList.remove('is-open'));
+  }
+});
+
+init();
+</script>
+</body>
+</html>
